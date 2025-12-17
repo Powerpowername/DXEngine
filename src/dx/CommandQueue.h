@@ -23,7 +23,7 @@ public:
 
 
 private:
-    CommandAllocator CreateCommandAllocator();
+    ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();
     GraphicsCommandList CreateCommandList(CommandAllocator commandAllocator);
 
 
