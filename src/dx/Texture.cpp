@@ -62,7 +62,22 @@ Texture Texture::Create(ComPtr<ID3D12Device> device, GraphicsCommandList command
 }
 void Texture::Resize(Device device, UINT width, UINT height)
 {
-    
+    Width = width;
+    Height = height;
+
+    D3D12_RESOURCE_DESC desc{};
+    desc.Width = width;
+    desc.Height = height;
+    Resource = nullptr;
+
+    ThrowIfFailed(device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        D3D12_HEAP_FLAG_NONE,
+        &desc,
+        D3D12_RESOURCE_STATE_COMMON,
+        nullptr,
+        IID_PPV_ARGS(&Resource)
+    ));
 }
 UINT Texture::NumMipmapLevels(UINT width, UINT height)
 {
@@ -71,3 +86,78 @@ UINT Texture::NumMipmapLevels(UINT width, UINT height)
 		levels++;
 	return levels;
 }
+
+void Texture::CreateRtv(ComPtr<ID3D12Device> device, D3D12_RTV_DIMENSION dimension, UINT mipSlice, UINT planeSlice)
+{
+    const D3D12_RESOURCE_DESC desc = Resource->GetDesc();
+
+    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+
+    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+    rtvDesc.Format = desc.Format;
+    rtvDesc.Texture2D.MipSlice = mipSlice;//Mipmap层级
+    rtvDesc.Texture2D.PlaneSlice = planeSlice;//纹理平面
+    device->CreateRenderTargetView(Resource.Get(),&rtvDesc,Rtv.CPUHandle);
+
+}
+
+void Texture::CreateSrv(ComPtr<ID3D12Device> device, D3D12_SRV_DIMENSION dimension, UINT mostDetailedMip, UINT mipLevels)
+{
+    const D3D12_RESOURCE_DESC desc = Resource->GetDesc();
+    //mostDetailedMip 为起始Mipmap层级
+    const UINT effectiveMipLevels = (mipLevels > 0 ) ? mipLevels : (desc.MipLevels - mostDetailedMip);
+	ASSERT(!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE), "Failed to create shader resource view: "
+																	 "Texture created with D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE flag.");
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+    srvDesc.Format = desc.Format;
+    srvDesc.ViewDimension = dimension;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+    switch (dimension)
+    {
+    case D3D12_SRV_DIMENSION_TEXTURE2D:
+        srvDesc.Texture2D.MostDetailedMip = mostDetailedMip;
+        srvDesc.Texture2D.MipLevels = effectiveMipLevels;
+        break;
+    case D3D12_SRV_DIMENSION_TEXTURE2DARRAY:
+        srvDesc.Texture2DArray.MostDetailedMip = mostDetailedMip;
+        srvDesc.Texture2DArray.MipLevels = effectiveMipLevels;
+		srvDesc.Texture2DArray.FirstArraySlice = 0;
+		srvDesc.Texture2DArray.ArraySize = desc.DepthOrArraySize;
+        break;
+    case D3D12_SRV_DIMENSION_TEXTURECUBE:
+        ASSERT(desc.DepthOrArraySize == 6, "SRV dimension is set to TEXTURECUBE, but texture has depth not equal to 6.");
+        srvDesc.TextureCube.MostDetailedMip = mostDetailedMip;
+        srvDesc.TextureCube.MipLevels = effectiveMipLevels;
+        break;
+    default:
+        ASSERT(false, "SRV dimension not supported.");
+        break;
+    }
+    device->CreateShaderResourceView(Resource.Get(),&srvDesc,Srv.CPUHandle);
+}
+
+void Texture::CreateUav(ComPtr<ID3D12Device> device, UINT mipSlice)
+{ 
+    const D3D12_RESOURCE_DESC desc = Resource->GetDesc();
+	ASSERT(desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, "Failed to create unordered access view: "
+																	"D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS flag is not set for this texture.");
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+    uavDesc.Format = desc.Format;
+    if(desc.DepthOrArraySize > 1)
+    {
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+		uavDesc.Texture2DArray.MipSlice = mipSlice;//指定哪一个mip
+		uavDesc.Texture2DArray.FirstArraySlice = 0;//指定第一个访问的纹理索引
+        uavDesc.Texture2DArray.ArraySize = desc.DepthOrArraySize;
+    }
+    else
+    {
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+        uavDesc.Texture2D.MipSlice = mipSlice;
+    }
+
+    device->CreateUnorderedAccessView(Resource.Get(),nullptr,&uavDesc,Uav.CPUHandle);
+}
+
