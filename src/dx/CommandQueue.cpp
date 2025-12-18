@@ -17,7 +17,7 @@ CommandQueue::CommandQueue(ComPtr<ID3D12Device> device, D3D12_COMMAND_LIST_TYPE 
     assert(m_FenceEvent && "Failed to create fence event.");
 }
 
-GraphicsCommandList CommandQueue::GetCommandList()
+GraphicsCommandList CommandQueue::GetFreeCommandList()
 {
     CommandAllocator commandAllocator;//命令分配器分配和管理命令列表的显存空间
     GraphicsCommandList commandList;

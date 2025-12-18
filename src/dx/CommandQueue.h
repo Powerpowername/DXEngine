@@ -8,7 +8,7 @@ class CommandQueue
 public:
     CommandQueue(Device device, D3D12_COMMAND_LIST_TYPE type);
 
-    GraphicsCommandList GetCommandList();
+    GraphicsCommandList GetFreeCommandList();
 
     UINT64 ExecuteCommandList(GraphicsCommandList commandList);
 
