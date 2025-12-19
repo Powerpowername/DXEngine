@@ -5,7 +5,7 @@ CommandQueue::CommandQueue(ComPtr<ID3D12Device> device, D3D12_COMMAND_LIST_TYPE 
 {
     D3D12_COMMAND_QUEUE_DESC desc = {};
     desc.Type = type; 
-    desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;//影响的是GPU的调度顺序和时间，对于CPU是简介影响
+    desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;//影响的是GPU的调度顺序和时间，对于CPU是间接影响
     desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     desc.NodeMask = 0;//执行此命令队列的GPU节点
 
@@ -17,10 +17,10 @@ CommandQueue::CommandQueue(ComPtr<ID3D12Device> device, D3D12_COMMAND_LIST_TYPE 
     assert(m_FenceEvent && "Failed to create fence event.");
 }
 
-GraphicsCommandList CommandQueue::GetFreeCommandList()
+ComPtr<ID3D12GraphicsCommandList2> CommandQueue::GetFreeCommandList()
 {
-    CommandAllocator commandAllocator;//命令分配器分配和管理命令列表的显存空间
-    GraphicsCommandList commandList;
+    ComPtr<ID3D12CommandAllocator> commandAllocator;//命令分配器分配和管理命令列表的显存空间
+    ComPtr<ID3D12GraphicsCommandList2> commandList;
     //存在空闲命令分配器就使用现有的，否则重建新的
     //注意：此处必须将命令分配器和命令列表都重置
     // 命令分配器 Reset：让内存从头开始重用（防止内存持续增长）
@@ -52,7 +52,7 @@ GraphicsCommandList CommandQueue::GetFreeCommandList()
     return commandList;
 }
 //此处我认为可能会出现多个对象使用同一个commandList的情况，因为commandList每次被使用完会被塞回队列，而又没有让外部对象释放所有权
-UINT64 CommandQueue::ExecuteCommandList(GraphicsCommandList commandList)
+UINT64 CommandQueue::ExecuteCommandList(ComPtr<ID3D12GraphicsCommandList2> commandList)
 {
     commandList->Close();
     ID3D12CommandAllocator* commandAllocator;
@@ -116,9 +116,9 @@ ComPtr<ID3D12CommandAllocator>  CommandQueue::CreateCommandAllocator()
 	return commandAllocator;
 }
 
-GraphicsCommandList CommandQueue::CreateCommandList(CommandAllocator allocator)
+ComPtr<ID3D12GraphicsCommandList2> CommandQueue::CreateCommandList(CommandAllocator allocator)
 {
-    GraphicsCommandList commandList;
+    ComPtr<ID3D12GraphicsCommandList2> commandList;
 	ThrowIfFailed(m_Device->CreateCommandList(0, m_CommandListType, allocator.Get(), nullptr, IID_PPV_ARGS(&commandList)));
     return commandList;
 }

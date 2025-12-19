@@ -6,11 +6,11 @@
 class CommandQueue
 {
 public:
-    CommandQueue(Device device, D3D12_COMMAND_LIST_TYPE type);
+    CommandQueue(ComPtr<ID3D12Device> device, D3D12_COMMAND_LIST_TYPE type);
 
-    GraphicsCommandList GetFreeCommandList();
+    ComPtr<ID3D12GraphicsCommandList2> GetFreeCommandList();
 
-    UINT64 ExecuteCommandList(GraphicsCommandList commandList);
+    UINT64 ExecuteCommandList(ComPtr<ID3D12GraphicsCommandList2> commandList);
 
     UINT64 Signal();
 
@@ -24,7 +24,7 @@ public:
 
 private:
     ComPtr<ID3D12CommandAllocator> CreateCommandAllocator();
-    GraphicsCommandList CreateCommandList(CommandAllocator commandAllocator);
+    ComPtr<ID3D12GraphicsCommandList2> CreateCommandList(CommandAllocator commandAllocator);
 
 
 private:
