@@ -171,8 +171,9 @@ void DxContext::CreateSwapChain()
 
 void DxContext::CreateDescriptorHeaps()
 { 
+	// +1 for the screen normal map, +2 for ambient maps, +2 for post processing, +5 for defered rendering, +1 for velocity buffer
     m_RtvHeap = DescriptorHeap::CreateDescriptorHeap(m_Device,{D3D12_DESCRIPTOR_HEAP_TYPE_RTV,NUM_FRAMES_IN_FLIGHT + 11,D3D12_DESCRIPTOR_HEAP_FLAG_NONE,0});
-
+	// +1 for the depth stencil buffer, +4 for the cascade shadow map
     m_DsvHeap = DescriptorHeap::CreateDescriptorHeap(m_Device,{D3D12_DESCRIPTOR_HEAP_TYPE_DSV,5,D3D12_DESCRIPTOR_HEAP_FLAG_NONE,0});
 
 	m_CbvSrvUavHeap = DescriptorHeap::CreateDescriptorHeap(m_Device, {D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 0});
@@ -245,7 +246,7 @@ void DxContext::ResizeSwapChain()
     m_CurrBackBuffer = 0;
 }
 
-void DxContext::ResizeDepthStencilBuffer(GraphicsCommandList commandList)
+void DxContext::ResizeDepthStencilBuffer(ComPtr<ID3D12GraphicsCommandList2> commandList)
 {
 	D3D12_RESOURCE_DESC depthStencilDesc = {};
 	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;

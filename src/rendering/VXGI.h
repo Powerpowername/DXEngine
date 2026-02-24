@@ -17,11 +17,18 @@ public:
     VXGI(shared_ptr<DxContext> dxContext,UINT size);
     void OnResize(UINT x,UINT y,UINT z);
 
+    D3D12_VIEWPORT &GetViewPort() { return m_ViewPort; }
+    D3D12_RECT &GetScissorRect() { return m_ScissorRect; }
+
+    void BufferToTexture3D(ComPtr<ID3D12GraphicsCommandList2> commandList);
 
 
 private:
-
-
+    /// @brief 
+    /// @param commandList 
+    /// @param index index = 0：处理第一个3D纹理（用于直接光照）index = 1：处理第二个3D纹理（用于第二次反弹光照）
+    void GenVoxelMipmap(ComPtr<ID3D12GraphicsCommandList2> commandList, int index);
+    void ComputeSecondBound(ComPtr<ID3D12GraphicsCommandList2> commandList);
 
 private:
     ComPtr<ID3D12Device> m_Device = nullptr;

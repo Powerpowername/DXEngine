@@ -49,7 +49,7 @@ private:
 	void AllocateDescriptors();
 
 	void ResizeSwapChain();
-	void ResizeDepthStencilBuffer(GraphicsCommandList commandList);
+	void ResizeDepthStencilBuffer(ComPtr<ID3D12GraphicsCommandList2> commandList);
 
 
 private:

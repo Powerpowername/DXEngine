@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "DescriptorHeap.h"
 
-DescriptorHeap DescriptorHeap::CreateDescriptorHeap(Device device, const D3D12_DESCRIPTOR_HEAP_DESC& desc)
+DescriptorHeap DescriptorHeap::CreateDescriptorHeap(ComPtr<ID3D12Device> device, const D3D12_DESCRIPTOR_HEAP_DESC& desc)
 {
     DescriptorHeap heap;
     ThrowIfFailed(device->CreateDescriptorHeap(&desc,IID_PPV_ARGS(&heap.Heap)));

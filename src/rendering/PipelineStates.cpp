@@ -22,13 +22,14 @@ void PipelineStates::BuildRootSignature(ComPtr<ID3D12Device> device)
     auto staticSamplers = GetStaticSamplers();
     CD3DX12_ROOT_PARAMETER slotRootParameter[(UINT)RootParam::Count];
 
-    slotRootParameter[(UINT)RootParam::ObjectCB].InitAsConstantBufferView((UINT)RootParam::ObjectCB);
-    slotRootParameter[(UINT)RootParam::PassCB].InitAsConstantBufferView((UINT)RootParam::PassCB);
-    slotRootParameter[(UINT)RootParam::MatCB].InitAsConstantBufferView((UINT)RootParam::MatCB);
-    slotRootParameter[(UINT)RootParam::LightCB].InitAsConstantBufferView((UINT)RootParam::LightCB);
-    slotRootParameter[(UINT)RootParam::ShadowCB].InitAsConstantBufferView((UINT)RootParam::ShadowCB);
-    slotRootParameter[(UINT)RootParam::SSAOCB].InitAsConstantBufferView((UINT)RootParam::SSAOCB);
-    slotRootParameter[(UINT)RootParam::RenderResources].InitAsConstants(MaxNumConstants, (UINT)RootParam::RenderResources);
+    slotRootParameter[(UINT)RootParam::ObjectCB].InitAsConstantBufferView((UINT)RootParam::ObjectCB,0);//b0 space0
+    slotRootParameter[(UINT)RootParam::PassCB].InitAsConstantBufferView((UINT)RootParam::PassCB,0);//b1 space0
+    slotRootParameter[(UINT)RootParam::MatCB].InitAsConstantBufferView((UINT)RootParam::MatCB,0);//b2 space0
+    slotRootParameter[(UINT)RootParam::LightCB].InitAsConstantBufferView((UINT)RootParam::LightCB,0);//b3 space0
+    slotRootParameter[(UINT)RootParam::ShadowCB].InitAsConstantBufferView((UINT)RootParam::ShadowCB,0);//b4 space0
+    slotRootParameter[(UINT)RootParam::SSAOCB].InitAsConstantBufferView((UINT)RootParam::SSAOCB,0);//b5 space0
+    //定义b6 space0寄存器最多只有32个32位常量可以使用
+    slotRootParameter[(UINT)RootParam::RenderResources].InitAsConstants(MaxNumConstants, (UINT)RootParam::RenderResources,0);//b6 space0
 
     CD3DX12_ROOT_SIGNATURE_DESC desc{(UINT)RootParam::Count, slotRootParameter,
                                     staticSamplers.size(), staticSamplers.data(),
@@ -38,7 +39,7 @@ void PipelineStates::BuildRootSignature(ComPtr<ID3D12Device> device)
     m_RootSignature = Utils::CreateRootSignature(device, desc);
 }
 
-void PipelineStates::BuildPSOs(Device device)
+void PipelineStates::BuildPSOs(ComPtr<ID3D12Device> device)
 {
     std::vector<D3D12_INPUT_ELEMENT_DESC> defaultInputLayout =
         {
