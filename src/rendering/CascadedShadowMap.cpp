@@ -32,7 +32,7 @@ CascadedShadowMap::CascadedShadowMap(std::shared_ptr<DxContext> dxContext)
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		&optClear,
 		IID_PPV_ARGS(&m_Resource)));
-
+	// 使用DSV视图写入深度值 
     D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
     dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
@@ -41,7 +41,7 @@ CascadedShadowMap::CascadedShadowMap(std::shared_ptr<DxContext> dxContext)
 	dsvDesc.Texture2DArray.ArraySize = 1;
 	dsvDesc.Texture2DArray.MipSlice = 0;
 
-
+	// 使用SRV视图读取深度值进行阴影计算
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
@@ -49,6 +49,7 @@ CascadedShadowMap::CascadedShadowMap(std::shared_ptr<DxContext> dxContext)
 	srvDesc.Texture2DArray.MostDetailedMip = 0;
 	srvDesc.Texture2DArray.MipLevels = 1;
 	srvDesc.Texture2DArray.ArraySize = 1;
+
 	for (int i = 0; i < 4; i++)
 	{
 		m_Dsvs[i] = dxContext->GetDsvHeap().Alloc();
@@ -59,7 +60,7 @@ CascadedShadowMap::CascadedShadowMap(std::shared_ptr<DxContext> dxContext)
 		srvDesc.Texture2DArray.FirstArraySlice = i;
 		m_Device->CreateShaderResourceView(m_Resource.Get(), &srvDesc, m_Srvs[i].CPUHandle);
 	}
-
+	// 创建一个SRV视图，包含整个资源（4个级联），方便在着色器中一次性访问所有级联
 	m_Srvs[4] = dxContext->GetCbvSrvUavHeap().Alloc();
 	srvDesc.Texture2DArray.FirstArraySlice = 0;
 	srvDesc.Texture2DArray.ArraySize = 4;
@@ -126,7 +127,7 @@ void CascadedShadowMap::CalcOrthoProjs(const Camera &camera, const Light &mainLi
 			{
 				for (int z = 0; z < 2; z++)
 				{
-                    // 1. 构造NDC空间的坐标
+                    // 1. 构造NDC空间的坐标[-1,1]，z根据DirectX的NDC范围设置为0或1
 					XMVECTOR NDCCoords = XMVectorSet(2.0f * x - 1.0f, 2.0f * y - 1.0f, z, 1.0f);
                     // 2. 从NDC变换到裁剪空间，再变换到世界空间
 					auto world = XMVector4Transform(NDCCoords, invViewProj);
